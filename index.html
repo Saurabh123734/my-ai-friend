@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><!DOCTYPE html>
+<html>
+<head>
+  <title>My First AI Project</title>
+</head>
+<body>
+  <h1>🤖 My AI Frienddddddddddd</h1>
+  <p>Ask me something:</p>
+  <input id="question" type="text" placeholder="Type here...">
+  <button onclick="answer()">Ask</button>
+  <p id="reply"></p>
+
+  <script>
+    function answer() {
+      let q = document.getElementById("question").value.toLowerCase();
+      let reply = "I don’t know that yet!";
+      
+      if (q.includes("hello")) reply = "Hi there 👋!";
+      if (q.includes("name")) reply = "My name is RoboBuddy!";
+      if (q.includes("joke")) reply = "😂 Why did the robot go to school? To improve its byte-size knowledge!";
+      if (q.includes("math")) reply = "2 + 2 = 4!";
+      
+      document.getElementById("reply").innerText = reply;
+    }
+  </script>
+</body>
+</html>
+ 

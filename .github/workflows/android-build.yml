@@ -1,0 +1,70 @@
+name: Build Android AAB (Bubblewrap/TWA)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Initialize TWA project
+        run: |
+          npx @bubblewrap/cli init --manifestUrl "https://saurabh123734.github.io/my-ai-friend/manifest.json" --applicationId "com.yourcompany.gokartdodgepro" --name "GoKart Dodge Pro" --force
+
+      - name: Decode keystore (if provided)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build Android (bubblewrap build)
+        working-directory: twa
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          if [ -f ../release-keystore.jks ]; then
+            bubblewrap build --keystorePath ../release-keystore.jks --keystorePassword "$ANDROID_KEYSTORE_PASSWORD" --keyAlias "$ANDROID_KEY_ALIAS" --keyPassword "$ANDROID_KEY_PASSWORD"
+          else
+            bubblewrap build || true
+          fi
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Assemble release bundle (gradle)
+        working-directory: twa
+        run: |
+          ./gradlew bundleRelease || true
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gokart-dodge-pro-aab
+          path: |
+            twa/app/build/outputs/**/*.aab
+            twa/app/build/outputs/**/*.apk
+
+      - name: Finish
+        run: echo "Build finished. Download the artifact from the workflow run."

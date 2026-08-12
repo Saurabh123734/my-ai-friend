@@ -1,0 +1,25 @@
+{
+  "name": "GoKart Dodge Pro",
+  "short_name": "GoKart Pro",
+  "description": "A full-screen browser gokart dodge game with career mode, dodge levels, abilities, powerups, achievements, and daily challenges.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#040b16",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

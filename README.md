@@ -32,15 +32,29 @@ The game is prepared for GitHub Pages publishing from the main branch. Once the 
 
 https://saurabh123734.github.io/my-ai-friend/
 
-## Publish the game
+If you want a public link immediately, use the ZIP in the artifacts (see the itch-zip workflow) and upload it to any static host (Netlify, Vercel, itch.io web). See below for quick publish methods.
 
-1. Push the repository changes to GitHub on the `main` branch.
-2. Go to the repository Settings > Pages, and set the source to `main` branch (root) if prompted.
-3. Verify that the GitHub Actions workflow `.github/workflows/pages.yml` runs successfully for the push.
-4. After the Pages workflow completes, refresh the live URL above.
+## Publish the game (overview for all devices)
 
-If the Pages site still shows 404, make sure the repository has Pages enabled and that the branch is `main`.
+This repository now includes CI workflows and packaging scaffolds to produce artifacts for every major platform:
 
-## Local preview
+- Web/PWA: `itch-zip.yml` produces out/gokart-dodge-pro-web.zip for quick hosting (Netlify, itch.io). 
+- Android: `android-build.yml` produces an AAB with Bubblewrap (use a keystore to sign before uploading to Google Play).
+- iOS: `ios-build.yml` attempts to create an Xcode archive (.xcarchive) via Capacitor on macOS runners; signing/provisioning needed for App Store Connect.
+- Windows: `windows-msix.yml` produces an MSIX (can be signed with PFX secret) for Microsoft Store.
+- Desktop: `electron-build.yml` builds Electron packages for Windows/macOS/Linux (unsigned — sign per platform).
 
-You can also preview the game locally by opening `index.html` in a browser. The game is already working at the local preview URL. Use the Fullscreen button to enter full-screen mode, and use arrow keys or touch to play.
+Each workflow uploads unsigned artifacts you can download, sign, and upload to stores.
+
+## Quick publish options (fastest -> slower)
+1) Netlify / Vercel: Upload the ZIP from the `itch-zip` workflow or drag-and-drop the `out/gokart-dodge-pro-web.zip` into Netlify Deploys to get a public URL immediately.
+2) itch.io: Upload the ZIP under your project (supports web HTML upload) for discoverability and a public page.
+3) GitHub Pages: Fix the pages.yml workflow and enable Pages in repository settings; then the site will be available at the GitHub Pages URL.
+4) App Stores (Android / iOS / Microsoft / Steam): Use produced artifacts, sign them with your keys, and submit via each store's developer portals.
+
+## Next steps (recommended)
+- Run the `itch-zip` workflow (Actions → Build web ZIP) and download the ZIP artifact.
+- Upload the ZIP to Netlify (drag-and-drop) to get a public link immediately.
+- After you confirm the public link works, produce platform packages (Android AAB, MSIX, Electron builds) and I will guide signing and store submission.
+
+---

@@ -1,0 +1,37 @@
+{
+  "name": "gokart-dodge-pro-electron",
+  "version": "1.0.0",
+  "description": "Electron wrapper for GoKart Dodge Pro (desktop builds)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^26.0.0",
+    "electron-builder": "^24.6.0"
+  },
+  "build": {
+    "appId": "com.yourcompany.gokartdodgepro",
+    "files": [
+      "../**/*",
+      "!node_modules",
+      "!**/node_modules/**",
+      "electron/**"
+    ],
+    "directories": {
+      "buildResources": "electron/resources"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
+  }
+}

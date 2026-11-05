@@ -197,6 +197,65 @@ const state = {
   ],
 };
 
+const PROGRESS_STORAGE_KEY = "gokart-dodge-pro-progress-v1";
+
+function saveProgress() {
+  const progress = {
+    bestScore: state.bestScore,
+    currentDriverId: state.currentDriverId,
+    currentCarId: state.currentCarId,
+    currentLocationId: state.currentLocationId,
+    currentSteeringId: state.currentSteeringId,
+    currentAgeId: state.currentAgeId,
+    career: state.career,
+    achievements: state.achievements,
+    dailyChallenges: state.dailyChallenges,
+    championship: {
+      eventIndex: state.championship.eventIndex,
+      score: state.championship.score,
+    },
+    news: state.news,
+  };
+
+  try {
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
+  } catch (error) {
+    console.warn("Game progress could not be saved", error);
+  }
+}
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "null");
+    if (!saved || typeof saved !== "object") {
+      return;
+    }
+
+    if (Number.isFinite(saved.bestScore)) state.bestScore = Math.max(0, saved.bestScore);
+    if (typeof saved.currentDriverId === "string") state.currentDriverId = saved.currentDriverId;
+    if (typeof saved.currentCarId === "string") state.currentCarId = saved.currentCarId;
+    if (typeof saved.currentLocationId === "string") state.currentLocationId = saved.currentLocationId;
+    if (typeof saved.currentSteeringId === "string") state.currentSteeringId = saved.currentSteeringId;
+    if (typeof saved.currentAgeId === "string") state.currentAgeId = saved.currentAgeId;
+    if (saved.career && typeof saved.career === "object") {
+      state.career = { ...state.career, ...saved.career };
+    }
+    if (Array.isArray(saved.achievements)) state.achievements = [...new Set(saved.achievements)];
+    if (Array.isArray(saved.dailyChallenges) && saved.dailyChallenges.length === state.dailyChallenges.length) {
+      state.dailyChallenges = saved.dailyChallenges;
+    }
+    if (saved.championship && typeof saved.championship === "object") {
+      state.championship.eventIndex = Math.max(0, Math.min(state.championship.events.length - 1, saved.championship.eventIndex || 0));
+      state.championship.score = Math.max(0, saved.championship.score || 0);
+    }
+    if (Array.isArray(saved.news)) state.news = saved.news.slice(0, 4);
+  } catch (error) {
+    console.warn("Saved game progress could not be loaded", error);
+  }
+}
+
+loadProgress();
+
 function getSelectedDriver() {
   return drivers.find((driver) => driver.id === state.currentDriverId);
 }
@@ -252,6 +311,7 @@ function renderDriverPicker() {
       renderCarPicker();
       renderAbilityInfo();
       renderAllPanels();
+      saveProgress();
       updateStatusMessage(`${driver.name} is ready for the next race.`);
     });
     driverListEl.appendChild(button);
@@ -272,6 +332,7 @@ function renderCarPicker() {
       renderCarPicker();
       renderAbilityInfo();
       renderAllPanels();
+      saveProgress();
       updateStatusMessage(`${car.name} is locked in.`);
     });
     kartListEl.appendChild(button);
@@ -289,6 +350,7 @@ function renderLocationPicker() {
       state.currentLocationId = location.id;
       renderLocationPicker();
       renderAllPanels();
+      saveProgress();
       updateStatusMessage(`${location.name} is ready for your next run.`);
     });
     locationListEl.appendChild(button);
@@ -306,6 +368,7 @@ function renderSteeringPicker() {
       state.currentSteeringId = option.id;
       renderSteeringPicker();
       renderAllPanels();
+      saveProgress();
       updateStatusMessage(`${option.name} steering is active.`);
     });
     steeringListEl.appendChild(button);
@@ -323,6 +386,7 @@ function renderAgePicker() {
       state.currentAgeId = option.id;
       renderAgePicker();
       renderAllPanels();
+      saveProgress();
       updateStatusMessage(`${option.name} age profile is active.`);
     });
     ageListEl.appendChild(button);
@@ -480,6 +544,7 @@ function resetRace() {
   updateStatusMessage(`Race started with ${getSelectedDriver().name} in ${getSelectedCar().name} at ${location.name} (Dodge Lv ${getSelectedCar().dodgeLevel}).`);
   updateHud();
   renderAllPanels();
+  saveProgress();
 }
 
 function moveLane(direction) {
@@ -640,6 +705,7 @@ function finishRace() {
   updateStatusMessage(`Race over. ${currentDriver.name} finished with ${runScore} score and earned ${creditGain} credits.`);
   updateHud();
   renderAllPanels();
+  saveProgress();
 }
 
 function drawRoad() {
@@ -904,6 +970,7 @@ startButton.addEventListener("click", () => {
 
 pauseButton.addEventListener("click", () => {
   state.running = !state.running;
+  saveProgress();
   updateStatusMessage(state.running ? "Race resumed." : "Race paused.");
 });
 
@@ -948,6 +1015,8 @@ window.addEventListener("appinstalled", () => {
   updateStatusMessage("GoKart Dodge Pro is installed and ready to launch.");
 });
 
+window.addEventListener("beforeunload", saveProgress);
+
 registerServiceWorker();
 renderDriverPicker();
 renderCarPicker();
@@ -956,6 +1025,7 @@ renderCarPicker();
 adjustCanvasSize();
 renderAllPanels();
 updateHud();
+saveProgress();
 
 // Fullscreen toggle button behavior
 const fullscreenButton = document.getElementById('fullscreenButton');

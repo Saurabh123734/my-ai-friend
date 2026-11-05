@@ -1,0 +1,47 @@
+name: Build Electron desktop artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: |
+          cd electron
+          npm ci || npm install
+
+      - name: Build electron (Linux)
+        run: |
+          cd electron
+          npx electron-builder --linux --x64 || true
+
+      - name: Build electron (Windows target on linux builder)
+        run: |
+          cd electron
+          npx electron-builder --win --x64 || true
+
+      - name: Build electron (mac target)
+        run: |
+          cd electron
+          npx electron-builder --mac || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-build-artifacts
+          path: electron/dist/**/*

@@ -1,0 +1,31 @@
+name: Build web ZIP for itch.io and Netlify
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build web (no-op for static project)
+        run: |
+          echo "Static web build - preparing files"
+
+      - name: Create zip
+        run: |
+          mkdir -p out
+          zip -r out/gokart-dodge-pro-web.zip index.html manifest.json style.css script.js sw.js icon.svg maskable-icon.svg store-assets || true
+
+      - name: Upload zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: gokart-web-zip
+          path: out/gokart-dodge-pro-web.zip

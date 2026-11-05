@@ -1,0 +1,70 @@
+name: Build MSIX for Microsoft Store
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare package folder
+        run: |
+          mkdir package
+          xcopy /E /I /Y "${{ github.workspace }}\*" package\ >nul
+          rmdir /S /Q package\.git || true
+
+      - name: Ensure AppxManifest exists
+        run: |
+          if (!(Test-Path windows\AppxManifest.xml)) { Write-Error 'windows\AppxManifest.xml is missing. Please provide a valid AppxManifest in the windows/ folder.' }
+
+      - name: Copy manifest and assets into package
+        run: |
+          copy windows\AppxManifest.xml package\AppxManifest.xml
+          mkdir package\assets || true
+          if (Test-Path store-assets) { xcopy /E /I /Y store-assets package\assets\ >nul }
+
+      - name: Locate MakeAppx and SignTool
+        shell: powershell
+        run: |
+          $make = (Get-Command makeappx.exe -ErrorAction SilentlyContinue).Source
+          $sig = (Get-Command signtool.exe -ErrorAction SilentlyContinue).Source
+          if (-not $make) { Write-Error 'MakeAppx.exe not found on runner. Ensure Windows SDK is installed.' }
+          if (-not $sig) { Write-Warning 'SignTool.exe not found; signed package step will fail if PFX is required.' }
+          Write-Output "MakeAppx: $make"; Write-Output "SignTool: $sig"
+
+      - name: Create MSIX package
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          $make = (Get-Command makeappx.exe -ErrorAction SilentlyContinue).Source
+          if (-not $make) { Write-Error 'MakeAppx.exe not found; aborting.' }
+          & $make pack /d package /p out\GoKartDodgePro.msix
+
+      - name: Decode signing certificate (PFX) from secret
+        if: ${{ secrets.MS_STORE_PFX_BASE64 != '' }}
+        shell: powershell
+        run: |
+          $pfxBase64 = '${{ secrets.MS_STORE_PFX_BASE64 }}'
+          $bytes = [System.Convert]::FromBase64String($pfxBase64)
+          [System.IO.File]::WriteAllBytes('out\code_sign_cert.pfx',$bytes)
+
+      - name: Sign MSIX package
+        if: ${{ secrets.MS_STORE_PFX_BASE64 != '' }}
+        shell: powershell
+        env:
+          PFX_PASSWORD: ${{ secrets.MS_STORE_PFX_PASSWORD }}
+        run: |
+          $sig = (Get-Command signtool.exe -ErrorAction SilentlyContinue).Source
+          if (-not $sig) { Write-Error 'SignTool.exe not found; cannot sign package.' }
+          & $sig sign /fd SHA256 /a /f out\code_sign_cert.pfx /p $env:PFX_PASSWORD out\GoKartDodgePro.msix
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gokart-msix
+          path: out\GoKartDodgePro.msix

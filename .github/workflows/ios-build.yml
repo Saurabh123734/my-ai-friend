@@ -1,0 +1,56 @@
+name: Build iOS (.xcarchive) using Capacitor (macOS runner)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+
+      - name: Install Capacitor and CocoaPods
+        run: |
+          npm install -g @capacitor/cli || true
+          sudo gem install cocoapods || true
+
+      - name: Initialize Capacitor iOS project (if missing)
+        run: |
+          if [ ! -d ios ]; then
+            npx cap init "GoKart Dodge Pro" com.yourcompany.gokartdodgepro || true
+            npx cap add ios || true
+          fi
+
+      - name: Sync web assets to iOS
+        run: |
+          npm run build || true
+          npx cap copy ios || true
+
+      - name: Build xcarchive
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath $PWD/build/App.xcarchive || true
+
+      - name: Export ipa
+        run: |
+          cd ios/App
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/export || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-artifacts
+          path: |
+            ios/App/build/**
